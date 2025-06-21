@@ -6,15 +6,15 @@ import { СlearCompletedBtn } from './СlearCompletedBtn';
 type TodoFooterProps = {
   todos: Todo[];
   todoFilter: TodoFilters;
-  setTodoFilter: (val: TodoFilters) => void;
-  handleDeleteTodo: (val: Todo) => void;
+  onSetTodoFilter: (val: TodoFilters) => void;
+  onDeleteTodo: (val: Todo) => void;
 };
 
 export const TodoFooter = ({
   todos,
   todoFilter,
-  setTodoFilter,
-  handleDeleteTodo,
+  onSetTodoFilter: setTodoFilter,
+  onDeleteTodo,
 }: TodoFooterProps) => {
   const activeTodos = todos.filter(todo => !todo.completed);
   const completedTodo = todos.filter(todo => todo.completed);
@@ -29,7 +29,7 @@ export const TodoFooter = ({
 
       <СlearCompletedBtn
         completedTodo={completedTodo}
-        onDeleteTodo={handleDeleteTodo}
+        onDeleteTodo={onDeleteTodo}
       />
     </footer>
   );

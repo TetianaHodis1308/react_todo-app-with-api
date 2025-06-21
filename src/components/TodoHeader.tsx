@@ -1,80 +1,93 @@
-import { forwardRef, useEffect } from 'react';
+import { forwardRef, useCallback, useEffect } from 'react';
 import { ErrorMessage } from '../types/ErrorMessage';
 import { createTodos, USER_ID } from '../api/todos';
 import { Todo } from '../types/Todo';
 import cn from 'classnames';
 
 type TodoHeaderProps = {
-  setErrorMessage: React.Dispatch<React.SetStateAction<ErrorMessage>>;
-  setTempTodo: React.Dispatch<React.SetStateAction<Todo | null>>;
-  setTodos: React.Dispatch<React.SetStateAction<Todo[]>>;
+  onSetErrorMessage: (val: ErrorMessage) => void;
+  onSetTempTodo: (val: Todo | null) => void;
+  onSetTodos: React.Dispatch<React.SetStateAction<Todo[]>>;
   isVisibleFooter: boolean;
   isLoading: boolean;
-  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
-  handleUpdateAllTodo: () => void;
+  onSetIsLoading: (val: boolean) => void;
+  onUpdateAllTodo: () => void;
   todos: Todo[];
   newTitle: string;
-  setTitle: React.Dispatch<React.SetStateAction<string>>;
+  onSetTitle: (val: string) => void;
 };
 
 export const TodoHeader = forwardRef<HTMLInputElement, TodoHeaderProps>(
   (
     {
-      setErrorMessage,
-      setTempTodo,
-      setTodos,
+      onSetErrorMessage: setErrorMessage,
+      onSetTempTodo: setTempTodo,
+      onSetTodos: setTodos,
       isVisibleFooter,
       isLoading,
-      setIsLoading,
-      handleUpdateAllTodo,
+      onSetIsLoading: setIsLoading,
+      onUpdateAllTodo: handleUpdateAllTodo,
       todos,
       newTitle,
-      setTitle,
+      onSetTitle: setTitle,
     },
     inputRef,
   ) => {
-    const handleQuery = (event: React.ChangeEvent<HTMLInputElement>) => {
-      setTitle(event.target.value);
-    };
+    const handleQuery = useCallback(
+      (event: React.ChangeEvent<HTMLInputElement>) => {
+        setTitle(event.target.value);
+      },
+      [setTitle],
+    );
 
-    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      const trimmedTitle = newTitle.trim();
+    const handleSubmit = useCallback(
+      (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        const trimmedTitle = newTitle.trim();
 
-      if (!trimmedTitle) {
-        setErrorMessage(ErrorMessage.WithoutError);
+        if (!trimmedTitle) {
+          setErrorMessage(ErrorMessage.WithoutError);
 
-        setTimeout(() => {
-          setErrorMessage(ErrorMessage.EmptyTitle);
-        }, 0);
+          setTimeout(() => {
+            setErrorMessage(ErrorMessage.EmptyTitle);
+          }, 0);
 
-        return;
-      }
+          return;
+        }
 
-      const newTodo = {
-        userId: USER_ID,
-        title: trimmedTitle,
-        completed: false,
-      };
+        const newTodo = {
+          userId: USER_ID,
+          title: trimmedTitle,
+          completed: false,
+        };
 
-      setTempTodo({ ...newTodo, id: 0 });
-      setIsLoading(true);
-      createTodos(newTodo)
-        .then(newTodoFromServer => {
-          setTodos(currentTodo => {
-            return [...currentTodo, newTodoFromServer];
+        setTempTodo({ ...newTodo, id: 0 });
+        setIsLoading(true);
+        createTodos(newTodo)
+          .then(newTodoFromServer => {
+            setTodos(currentTodo => {
+              return [...currentTodo, newTodoFromServer];
+            });
+            setTempTodo(null);
+            setTitle('');
+          })
+          .catch(() => {
+            setErrorMessage(ErrorMessage.UnableAddTodo);
+            setTempTodo(null);
+          })
+          .finally(() => {
+            setIsLoading(false);
           });
-          setTempTodo(null);
-          setTitle('');
-        })
-        .catch(() => {
-          setErrorMessage(ErrorMessage.UnableAddTodo);
-          setTempTodo(null);
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
-    };
+      },
+      [
+        newTitle,
+        setErrorMessage,
+        setTempTodo,
+        setIsLoading,
+        setTodos,
+        setTitle,
+      ],
+    );
 
     useEffect(() => {
       if (inputRef && 'current' in inputRef && inputRef.current) {

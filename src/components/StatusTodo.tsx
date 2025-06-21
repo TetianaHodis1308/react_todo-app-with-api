@@ -12,7 +12,7 @@ export const StatusTodo = ({ todoFilter, onTodoFilter }: StatusTodoProps) => {
       {Object.entries(TodoFilters).map(([text, value]) => (
         <a
           key={value}
-          href={`#/${value !== 'all' ? value : ''} `}
+          href={`#/${value !== TodoFilters.All ? value : ''} `}
           className={cn('filter__link', {
             'filter__link selected': todoFilter === value,
           })}
