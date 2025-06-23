@@ -1,20 +1,20 @@
-import { forwardRef, useCallback, useEffect } from 'react';
+import { forwardRef, useEffect } from 'react';
 import { ErrorMessage } from '../types/ErrorMessage';
 import { createTodos, USER_ID } from '../api/todos';
 import { Todo } from '../types/Todo';
 import cn from 'classnames';
 
 type TodoHeaderProps = {
-  onSetErrorMessage: (val: ErrorMessage) => void;
-  onSetTempTodo: (val: Todo | null) => void;
-  onSetTodos: React.Dispatch<React.SetStateAction<Todo[]>>;
+  onSetErrorMessage: (error: ErrorMessage) => void;
+  onSetTempTodo: (todo: Todo | null) => void;
+  onSetTodos: (todos: Todo[]) => void;
   isVisibleFooter: boolean;
   isLoading: boolean;
-  onSetIsLoading: (val: boolean) => void;
+  onSetIsLoading: (loading: boolean) => void;
   onUpdateAllTodo: () => void;
   todos: Todo[];
   newTitle: string;
-  onSetTitle: (val: string) => void;
+  onSetTitle: (title: string) => void;
 };
 
 export const TodoHeader = forwardRef<HTMLInputElement, TodoHeaderProps>(
@@ -22,7 +22,7 @@ export const TodoHeader = forwardRef<HTMLInputElement, TodoHeaderProps>(
     {
       onSetErrorMessage: setErrorMessage,
       onSetTempTodo: setTempTodo,
-      onSetTodos: setTodos,
+      onSetTodos: onSetTodos,
       isVisibleFooter,
       isLoading,
       onSetIsLoading: setIsLoading,
@@ -33,61 +33,51 @@ export const TodoHeader = forwardRef<HTMLInputElement, TodoHeaderProps>(
     },
     inputRef,
   ) => {
-    const handleQuery = useCallback(
-      (event: React.ChangeEvent<HTMLInputElement>) => {
-        setTitle(event.target.value);
-      },
-      [setTitle],
-    );
+    const handleQuery = (event: React.ChangeEvent<HTMLInputElement>) => {
+      setTitle(event.target.value);
+    };
 
-    const handleSubmit = useCallback(
-      (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        const trimmedTitle = newTitle.trim();
+    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      const trimmedTitle = newTitle.trim();
 
-        if (!trimmedTitle) {
-          setErrorMessage(ErrorMessage.WithoutError);
+      if (!trimmedTitle) {
+        setErrorMessage(ErrorMessage.WithoutError);
 
-          setTimeout(() => {
-            setErrorMessage(ErrorMessage.EmptyTitle);
-          }, 0);
+        setTimeout(() => {
+          setErrorMessage(ErrorMessage.EmptyTitle);
+        }, 0);
 
-          return;
-        }
+        return;
+      }
 
-        const newTodo = {
-          userId: USER_ID,
-          title: trimmedTitle,
-          completed: false,
-        };
+      const newTodo = {
+        userId: USER_ID,
+        title: trimmedTitle,
+        completed: false,
+      };
 
-        setTempTodo({ ...newTodo, id: 0 });
-        setIsLoading(true);
-        createTodos(newTodo)
-          .then(newTodoFromServer => {
-            setTodos(currentTodo => {
-              return [...currentTodo, newTodoFromServer];
-            });
-            setTempTodo(null);
-            setTitle('');
-          })
-          .catch(() => {
-            setErrorMessage(ErrorMessage.UnableAddTodo);
-            setTempTodo(null);
-          })
-          .finally(() => {
-            setIsLoading(false);
-          });
-      },
-      [
-        newTitle,
-        setErrorMessage,
-        setTempTodo,
-        setIsLoading,
-        setTodos,
-        setTitle,
-      ],
-    );
+      setTempTodo({ ...newTodo, id: 0 });
+      setIsLoading(true);
+      createTodos(newTodo)
+        .then(newTodoFromServer => {
+          const todoNew = [...todos, newTodoFromServer];
+
+          onSetTodos(todoNew);
+          // onSetTodos((currentTodo: Todo[]) => {
+          //   return [...currentTodo, newTodoFromServer];
+          // });
+          setTempTodo(null);
+          setTitle('');
+        })
+        .catch(() => {
+          setErrorMessage(ErrorMessage.UnableAddTodo);
+          setTempTodo(null);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    };
 
     useEffect(() => {
       if (inputRef && 'current' in inputRef && inputRef.current) {

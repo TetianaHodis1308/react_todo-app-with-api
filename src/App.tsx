@@ -46,50 +46,44 @@ export const App: React.FC = () => {
     return () => clearTimeout(timer);
   }, [errorMessage]);
 
-  const handleDeleteTodo = useCallback(
-    async (todo: Todo) => {
-      setTodosProcessing(prev => [...prev, todo.id]);
-      try {
-        await deleteTodos(todo.id);
-        setTodos(currentTodos =>
-          currentTodos.filter(currentTodo => currentTodo.id !== todo.id),
+  const handleDeleteTodo = async (todo: Todo) => {
+    setTodosProcessing(prev => [...prev, todo.id]);
+    try {
+      await deleteTodos(todo.id);
+      setTodos(currentTodos =>
+        currentTodos.filter(currentTodo => currentTodo.id !== todo.id),
+      );
+      inputRef.current?.focus();
+    } catch (error) {
+      setErrorMessage(ErrorMessage.UnableDeleteTodo);
+      throw error;
+    } finally {
+      setTodosProcessing(prev => prev.filter(id => id !== todo.id));
+    }
+  };
+
+  const handleUpdateTodo = async (toUpdateTodo: Todo): Promise<Todo> => {
+    setTodosProcessing(prev => [...prev, toUpdateTodo.id]);
+
+    try {
+      const updateTodo = await getUpdateTodo(toUpdateTodo);
+
+      setTodos(currentTodos => {
+        return currentTodos.map(currentTodo =>
+          currentTodo.id === updateTodo.id ? updateTodo : currentTodo,
         );
-        inputRef.current?.focus();
-      } catch (error) {
-        setErrorMessage(ErrorMessage.UnableDeleteTodo);
-        throw error;
-      } finally {
-        setTodosProcessing(prev => prev.filter(id => id !== todo.id));
-      }
-    },
-    [setErrorMessage, setTodosProcessing, setTodos],
-  );
+      });
 
-  const handleUpdateTodo = useCallback(
-    async (toUpdateTodo: Todo): Promise<Todo> => {
-      setTodosProcessing(prev => [...prev, toUpdateTodo.id]);
+      return updateTodo;
+    } catch (error) {
+      setErrorMessage(ErrorMessage.UnableUpdateTodo);
+      throw error;
+    } finally {
+      setTodosProcessing(prev => prev.filter(id => id !== toUpdateTodo.id));
+    }
+  };
 
-      try {
-        const updateTodo = await getUpdateTodo(toUpdateTodo);
-
-        setTodos(currentTodos => {
-          return currentTodos.map(currentTodo =>
-            currentTodo.id === updateTodo.id ? updateTodo : currentTodo,
-          );
-        });
-
-        return updateTodo;
-      } catch (error) {
-        setErrorMessage(ErrorMessage.UnableUpdateTodo);
-        throw error;
-      } finally {
-        setTodosProcessing(prev => prev.filter(id => id !== toUpdateTodo.id));
-      }
-    },
-    [setErrorMessage, setTodosProcessing, setTodos],
-  );
-
-  const handleUpdateAllTodo = useCallback(() => {
+  const handleUpdateAllTodo = () => {
     const activeTodo = todos.filter(todo => !todo.completed);
 
     if (activeTodo.length > 0) {
@@ -101,7 +95,15 @@ export const App: React.FC = () => {
         handleUpdateTodo({ ...todo, completed: false });
       });
     }
-  }, [handleUpdateTodo, todos]);
+  };
+
+  const onSetTodos = useCallback((todo: Todo[]) => {
+    setTodos(todo);
+  }, []);
+
+  const onSetErrorMessage = useCallback((error: ErrorMessage) => {
+    setErrorMessage(error);
+  }, []);
 
   if (!USER_ID) {
     return <UserWarning />;
@@ -114,7 +116,7 @@ export const App: React.FC = () => {
         <TodoHeader
           onSetErrorMessage={setErrorMessage}
           onSetTempTodo={setTempTodo}
-          onSetTodos={setTodos}
+          onSetTodos={onSetTodos}
           isVisibleFooter={isVisibleFooter}
           ref={inputRef}
           isLoading={isLoading}
@@ -150,7 +152,7 @@ export const App: React.FC = () => {
 
       <ErrorNotification
         errorMessage={errorMessage}
-        onSetErrorMessage={setErrorMessage}
+        onSetErrorMessage={onSetErrorMessage}
       />
     </div>
   );
